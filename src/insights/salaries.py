@@ -4,42 +4,66 @@ from src.insights.jobs import read
 
 def get_max_salary(path: str) -> int:
     jobs_data = read(path)
-    int_salaries = [int(job['max_salary']) for job in jobs_data
-                    if job.get('max_salary') and job['max_salary'].isdigit()]
+    salaries = [
+        job['max_salary'] for job in jobs_data if job['max_salary'].isdigit()
+    ]
+    int_salaries = list(map(int, salaries))
+
     return max(int_salaries)
 
 
 def get_min_salary(path: str) -> int:
     jobs_data = read(path)
-    int_salaries = [int(job['min_salary']) for job in jobs_data
-                    if job.get('min_salary') and job['min_salary'].isdigit()]
+    salaries = [
+        int(job['min_salary'])
+        for job in jobs_data
+        if job['min_salary'].isdigit()
+    ]
+    int_salaries = list(map(int, salaries))
+
     return min(int_salaries)
 
 
+def is_salary_not_valid(salary: Union[int, str]) -> bool:
+    try:
+        int(salary)
+        return False
+    except (ValueError, TypeError):
+        return True
+
+
+def is_min_greater_than_max(
+        minimum: Union[int, str], maximum: Union[int, str]) -> bool:
+    try:
+        return int(minimum) > int(maximum)
+    except TypeError:
+        return True
+
+
+def are_fields_not_digits(
+        minimum: Union[int, str], maximum: Union[int, str]) -> bool:
+    try:
+        return not str(minimum).isnumeric() or not str(maximum).isnumeric()
+    except KeyError:
+        return True
+
+
+def do_fields_exist(job: Dict) -> bool:
+    return 'min_salary' not in job or 'max_salary' not in job
+
+
 def matches_salary_range(job: Dict, salary: Union[int, str]) -> bool:
-    """Checks if a given salary is in the salary range of a given job
+    validation1 = do_fields_exist(job)
+    validation2 = are_fields_not_digits(
+        job.get('min_salary'), job.get('max_salary'))
+    validation3 = is_min_greater_than_max(
+        job.get('min_salary'), job.get('max_salary'))
+    validation4 = is_salary_not_valid(salary)
 
-    Parameters
-    ----------
-    job : dict
-        The job with `min_salary` and `max_salary` keys
-    salary : int
-        The salary to check if matches with salary range of the job
+    if validation1 or validation2 or validation3 or validation4:
+        raise ValueError
 
-    Returns
-    -------
-    bool
-        True if the salary is in the salary range of the job, False otherwise
-
-    Raises
-    ------
-    ValueError
-        If `job["min_salary"]` or `job["max_salary"]` doesn't exists
-        If `job["min_salary"]` or `job["max_salary"]` aren't valid integers
-        If `job["min_salary"]` is greather than `job["max_salary"]`
-        If `salary` isn't a valid integer
-    """
-    raise NotImplementedError
+    return int(job['min_salary']) <= int(salary) <= int(job['max_salary'])
 
 
 def filter_by_salary_range(
